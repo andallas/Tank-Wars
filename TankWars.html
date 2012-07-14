@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <title>Blackmodule's Multiplayer Tank Wars</title>
+    
+    <meta charset="UTF-8" />
+    
+</head>
+
+<body>
+
+<script src="Game.js"></script>
+
+    <div align="center">
+        
+        <div align="center">
+    
+            <canvas id="canvas" width="800" height="600">
+            
+                Your browser does not support the canvas element, sorry.
+                
+            </canvas>
+        
+        </div>
+        
+        Status: <span id="status"></span><br />
+        
+        <script type="text/javascript">
+
+            var game = new Game();
+            game.Init();
+            game.Run();
+            
+        </script>
+
+    </div>
+
+</body>
+
+</html>
