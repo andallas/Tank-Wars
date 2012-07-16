@@ -114,35 +114,112 @@ function Game()
     // Classes
     /******************************************************/  
 
-    function Vector(startX, startY, endX, endY)
+    function vector2(X, Y)
     {
-        this.vX = endX;
-        this.vY = endY
-        this.lenX = this.vX - startX;
-        this.lenY = this.vY - startY;
-        this.mag = Math.sqrt(this.lenX * this.lenX + this.lenY * this.lenY);
-        this.velX = this.lenX / this.mag;
-        this.velY = this.lenY / this.mag;
-        
-        this.dot = function(vector)
+        this.x = X;
+        this.y = Y;
+
+        // Set current vector equal to passed vector
+        this.set = function(vect)
         {
-            return (this.velX * vector.velX) + (this.velY * vector.velY);
+            this.x = vect.x;
+            this.y = vect.y;
         }
         
-        this.angle = function(dot, vector)
+        // Returns sum of current vector and passed vector
+        this.add = function(vect)
         {
-            return Math.acos(dot / (this.mag * vector.mag));
+            var newVec = new vector2(this.x + vect.x, this.y + vect.y);
+            return newVec;
         }
         
-        this.update = function(startX, startY, endX, endY)
+        // Returns difference of current vector and passed vector
+        this.sub = function(vect)
         {
-            this.vX = endX;
-            this.vY = endY
-            this.lenX = this.vX - startX;
-            this.lenY = this.vY - startY;
-            this.mag = Math.sqrt(this.lenX * this.lenX + this.lenY * this.lenY);
-            this.velX = this.lenX / this.mag;
-            this.velY = this.lenY / this.mag;
+            var newVec = new vector2(this.x - vect.x, this.y - vect.y);
+            return newVec;
+        }
+        
+        // Returns product of current vector and passed vector
+        this.mult = function(vect)
+        {
+            var newVec = new vector2(this.x * vect.x, this.y * vect.y);
+            return newVec;
+        }
+        
+        // Returns dot product of current vector and passed vector
+        this.dot = function(vect)
+        {
+            return (this.x * vect.x) + (this.y * vect.y);
+        }
+        
+        // Returns quotient of current vector and scalar value
+        this.scalMult = function(scal)
+        {
+            var newVec = new vector2(this.x * scal, this.y * scal);
+            return newVec;
+        }
+        
+        // Returns magnitude of current vector
+        this.magnitude = function()
+        {
+            var mag = Math.sqrt((this.x * this.x + this.y * this.y));
+            return mag;
+        }
+        
+        // Returns vector that is between current vector and passed vector, where second parameter is percentage distance between both vectors
+        // (Linear interpolation between 2 vectors)
+        this.lerp = function(vect, scal)
+        {
+            var temp = new vector2(this.x, this.y);
+            var temp2 = new vector2(vect.x, vect.y);
+            temp.set(temp.sub(temp2));
+            temp.set(temp.scalMult(scal));
+            temp.set(temp.add(temp2));
+            return temp;
+        }
+        
+        // Returns distance between current vector and passed vector
+        this.distance = function(vect)
+        {
+            var temp = new vector2(vect.x, vect.y);
+            var curVec = new vector2(this.x, this.y);
+            temp.set(temp.sub(curVec));
+
+            return Math.sqrt(temp.x * temp.x + temp.y * temp.y);
+        }
+        
+        // Returns angle in degrees between current vector and passed vector
+        this.angleDegrees = function(vect)
+        {
+            var angle = Math.atan2((vect.y - this.y), (vect.x - this.x));
+            angle = angle / Math.PI * 180;
+            return angle;
+        }
+        
+        // Returns angle in radians between current vector and passed vector
+        this.angleRad = function(vect)
+        {
+            var angle = Math.atan2((vect.y - this.y), (vect.x - this.x));
+            return angle;
+        }
+        
+        // Returns normalized version of current vector
+        this.normalize = function()
+        {
+            var mag = this.magnitude();
+            var newVec = new vector2(this.x / mag, this.y / mag);
+            return newVec;
+        }
+
+        // Returns boolean indicating if current vector and passed vector are equal
+        this.equal = function(vect)
+        {
+            if(this.x == vect.x && this.y == vect.y)
+            {
+                return true;
+            }
+            return false;
         }
     }
     
@@ -162,7 +239,8 @@ function Game()
         this.tileHeight = 32;
         this.tarX = TarX;
         this.tarY = TarY;
-        this.vector = new Vector(this.posX, this.posY, this.tarX, this.tarY);
+        this.vector = new vector2(this.tarX - this.posX, this.tarY - this.posY);
+        this.vector.set(this.vector.normalize());
         this.acc = 1;
         
         this.update = function(i)
@@ -175,8 +253,8 @@ function Game()
                 self.popArray(clientData.player.missiles, i);
             }
             
-            this.posX += this.vector.velX * ((this.speed + this.acc) * delta);
-            this.posY += this.vector.velY * ((this.speed + this.acc) * delta);
+            this.posX += this.vector.x * ((this.speed + this.acc) * delta);
+            this.posY += this.vector.y * ((this.speed + this.acc) * delta);
             this.acc += 10;
             if(this.acc >= 200)
             {
@@ -208,10 +286,11 @@ function Game()
         this.tileY;
         this.tileWidth = 32;
         this.tileHeight = 32;
-        this.chassisVector = new Vector(this.posX, this.posY, this.posX, this.posY - 10);
-        this.turretVector = new Vector(this.posX, this.posY, this.posX, this.posY + 10);
-        this.turretAngle = 0;
-        this.speed = 25;
+        this.chassisVector = new vector2(this.posX - this.posX, (this.posY - 10) - this.posY);
+        this.chassisVector.set(this.chassisVector.normalize());
+        this.turretVector = new vector2(this.posX - this.posX, (this.posY + 10) - this.posY);
+        this.turretVector.set(this.turretVector.normalize());
+        this.speed = 5;
         this.acc = 1;
         
         this.isAlive = function()
@@ -221,28 +300,33 @@ function Game()
         
         this.update = function()
         {
-            this.turretVector.update(this.posX, this.posY, mouseX, mouseY);
+            var temp = new vector2(mouseX - this.posX, mouseY - this.posY);
+            this.turretVector.set(temp);
             
             // Input
 			if(Keys[0] != 0)
 			{
-                this.chassisVector.update(this.posX, this.posY, this.posX, this.posY - this.speed);
-                this.posY += this.chassisVector.velY * ((this.speed + this.acc) * delta);
+                temp = new vector2(this.posX - this.posX, (this.posY - this.speed) - this.posY);
+                this.chassisVector.set(temp);
+                this.posY += this.chassisVector.y * ((this.speed + this.acc) * delta);
 			}
 			if(Keys[2] != 0)
 			{
-                this.chassisVector.update(this.posX, this.posY, this.posX, this.posY + this.speed);
-                this.posY += this.chassisVector.velY * ((this.speed + this.acc) * delta);
+                temp = new vector2(this.posX - this.posX, (this.posY + this.speed) - this.posY);
+                this.chassisVector.set(temp);
+                this.posY += this.chassisVector.y * ((this.speed + this.acc) * delta);
 			}
 			if(Keys[1] != 0)
 			{
-                this.chassisVector.update(this.posX, this.posY, this.posX - this.speed, this.posY);
-                this.posX += this.chassisVector.velX * ((this.speed + this.acc) * delta);
+                temp = new vector2((this.posX - this.speed) - this.posX, this.posY - this.posY);
+                this.chassisVector.set(temp);
+                this.posX += this.chassisVector.x * ((this.speed + this.acc) * delta);
 			}
 			if(Keys[3] != 0)
 			{
-                this.chassisVector.update(this.posX, this.posY, this.posX + this.speed, this.posY);
-                this.posX += this.chassisVector.velX * ((this.speed + this.acc) * delta);
+                temp = new vector2((this.posX + this.speed) - this.posX, this.posY - this.posY);
+                this.chassisVector.set(temp);
+                this.posX += this.chassisVector.x * ((this.speed + this.acc) * delta);
 			}
             if(mouseClick == true)
             {
@@ -259,9 +343,9 @@ function Game()
                 this.acc += 0.5;
             }
             
-            if(this.acc >= 98)
+            if(this.acc >= 48)
             {
-                this.acc = 98;
+                this.acc = 48;
             }
         }
         
@@ -311,29 +395,19 @@ function Game()
                              this.player.height);
 
             // Draw Turret
-            var targetVector = new Vector(this.player.posX, this.player.posY, mouseX, mouseY);
-            var dot = this.player.turretVector.dot(targetVector);
-            var targetAngle = this.player.turretVector.angle(dot, targetVector) * (Math.PI / 180);
+            var tarVector = new vector2(mouseX - this.player.posX, mouseY - this.player.posY);
+            var myRadians = this.player.chassisVector.angleRad(tarVector);
             
-            if(!isNaN(targetAngle))
+            if(myRadians < 0)
             {
-                while(this.player.turretAngle > 360)
-                {
-                    this.player.turretAngle -= 360;
-                }
-                while(this.player.turretAngle < 0)
-                {
-                    this.player.turretAngle += 360;
-                }
-                
-                    this.player.turretAngle += targetAngle * 10;
-                
-                console.log(this.player.turretAngle);
+                myRadians += Math.PI * 2
             }
+            
+            myRadians += 90 * Math.PI / 180; // 90 degree offset
             
             buffer.save();
             buffer.translate(this.player.posX + this.player.width / 2, this.player.posY + this.player.height / 2);
-            buffer.rotate(this.player.turretAngle);
+            buffer.rotate(myRadians);
             buffer.drawImage(players,
                              this.player.tileX + 32,
                              this.player.tileY,
@@ -348,15 +422,29 @@ function Game()
             // Draw Missiles
             for(var i = 0; i < this.player.missiles.length; i++)
             {
+                var tarVector = new vector2(this.player.missiles[i].tarX - this.player.missiles[i].posX, this.player.missiles[i].tarY - this.player.missiles[i].posY);
+                var myRadians = this.player.missiles[i].vector.angleRad(tarVector);
+                
+                if(myRadians < 0)
+                {
+                    myRadians += Math.PI * 2
+                }
+                
+                myRadians += 90 * Math.PI / 180; // 90 degree offset
+                
+                buffer.save();
+                buffer.translate(this.player.missiles[i].posX + this.player.missiles[i].width / 2, this.player.missiles[i].posY + this.player.missiles[i].height / 2);
+                buffer.rotate(myRadians);
                 buffer.drawImage(players,
-                             this.player.missiles[i].tileX,
-                             this.player.missiles[i].tileY,
-                             this.player.missiles[i].tileWidth,
-                             this.player.missiles[i].tileHeight,
-                             this.player.missiles[i].posX,
-                             this.player.missiles[i].posY,
-                             this.player.missiles[i].width,
-                             this.player.missiles[i].height);
+                                 this.player.missiles[i].tileX,
+                                 this.player.missiles[i].tileY,
+                                 this.player.missiles[i].tileWidth,
+                                 this.player.missiles[i].tileHeight,
+                                 -this.player.missiles[i].width / 2,
+                                 -this.player.missiles[i].height / 2,
+                                 this.player.missiles[i].width,
+                                 this.player.missiles[i].height);
+                buffer.restore();
             }
 		}
         
@@ -494,9 +582,6 @@ function Game()
 
     this.Init = function(contents)
     {
-        // Initialize connection
-        self.initConnection();
-        
         // Initialize canvas
         _canvas = document.getElementById('canvas');
         if(_canvas && _canvas.getContext)
@@ -513,6 +598,9 @@ function Game()
             buffer.font = "bold 25px sans-serif";
         }
         
+        // Initialize connection
+        self.initConnection();
+        
         // Initialize GUI text
         guiText[0] = new GUIText("Connecting...", _canvas.width / 2, _canvas.height / 2 - 100, 
                                      "28px Helvetica", "center", "top", 109, 192, 103, 0);
@@ -521,65 +609,143 @@ function Game()
     
     this.initConnection = function()
     {
-        var url = "ws://67.249.19.53:24654";
-        socket = new WebSocket(url, "game-connection");
-        status.textContent = "Not Connected";
-        
-        socket.addEventListener("open", function(event)
+        var url = "";
+        window.addEventListener("load", function(event)
         {
-            if(!connected)
-            {
-                if(!sentConnectRequest)
-                {
-                    sentConnectRequest = true;
-                    var handshake = new GameData('handshake');
-                    socket.send(JSON.stringify(handshake));
-                }
-                else
-                {
-                    console.log("Already connected");
-                }
-            }
-        });
+            var localConnect = document.getElementById("localConnect");
+            var serverConnect = document.getElementById("serverConnect");
 
-        // Display messages received from the server
-        socket.addEventListener("message", function(event)
-        {
-            var e = JSON.parse(event.data);
-            if(e.type == "game")
+            localConnect.addEventListener("click", function(event)
             {
-                clientData.players = e.players;
-                clientData.enemies = e.enemies;
-            }
-            else if(e.type == "handshake")
-            {
-                console.log("Connected");
-                connected = true;
+                localConnect.disabled = true;
+                serverConnect.disabled = true;
                 
-                player = new Player(400, 300, 0);
-                clientData = new GameData('game');
-                self.createNewPlayer(e.players[e.newID]);
-                clientData.player.id = e.newID;
-                clientData.enemies = e.enemies;
-            }
-            else
+                url = "ws://localhost:24654";
+                socket = new WebSocket(url, "game-connection");
+                
+                socket.addEventListener("open", function(event)
+                {
+                    if(!connected)
+                    {
+                        if(!sentConnectRequest)
+                        {
+                            sentConnectRequest = true;
+                            var handshake = new GameData('handshake');
+                            socket.send(JSON.stringify(handshake));
+                        }
+                        else
+                        {
+                            console.log("Already connected");
+                        }
+                    }
+                });
+
+                socket.addEventListener("message", function(event)
+                {
+                    var e = JSON.parse(event.data);
+                    if(e.type == "game")
+                    {
+                        clientData.players = e.players;
+                        clientData.enemies = e.enemies;
+                    }
+                    else if(e.type == "handshake")
+                    {
+                        console.log("Connected");
+                        connected = true;
+                        
+                        player = new Player(400, 300, 0);
+                        clientData = new GameData('game');
+                        self.createNewPlayer(e.players[e.newID]);
+                        clientData.player.id = e.newID;
+                        clientData.enemies = e.enemies;
+                    }
+                    else
+                    {
+                        console.log("Message is of unknown type");
+                        console.log(e);
+                    }
+                });
+
+                socket.addEventListener("error", function(event)
+                {
+                    console.log("Error: " + event);
+                });
+
+                socket.addEventListener("close", function(event)
+                {
+                    console.log("Not Connected");
+                    connected = false;
+                    socket.close();
+                    serverConnect.disabled = false;
+                    localConnect.disabled = false;
+                });
+            });
+            
+            serverConnect.addEventListener("click", function(event)
             {
-                console.log("Message is of unknown type");
-                console.log(e);
-            }
-        });
+                serverConnect.disabled = true;
+                localConnect.disabled = true;
+                
+                url = "ws://67.249.19.53:24654";
+                socket = new WebSocket(url, "game-connection");
+                socket.addEventListener("open", function(event)
+                {
+                    if(!connected)
+                    {
+                        if(!sentConnectRequest)
+                        {
+                            sentConnectRequest = true;
+                            var handshake = new GameData('handshake');
+                            socket.send(JSON.stringify(handshake));
+                        }
+                        else
+                        {
+                            console.log("Already connected");
+                        }
+                    }
+                });
 
-        // Display any errors that occur
-        socket.addEventListener("error", function(event)
-        {
-            console.log("Error: " + event);
-        });
+                socket.addEventListener("message", function(event)
+                {
+                    var e = JSON.parse(event.data);
+                    if(e.type == "game")
+                    {
+                        clientData.players = e.players;
+                        clientData.enemies = e.enemies;
+                    }
+                    else if(e.type == "handshake")
+                    {
+                        console.log("Connected");
+                        connected = true;
+                        
+                        player = new Player(400, 300, 0);
+                        clientData = new GameData('game');
+                        self.createNewPlayer(e.players[e.newID]);
+                        clientData.player.id = e.newID;
+                        clientData.enemies = e.enemies;
+                    }
+                    else
+                    {
+                        console.log("Message is of unknown type");
+                        console.log(e);
+                    }
+                });
 
-        socket.addEventListener("close", function(event)
-        {
-            console.log("Not Connected");
-            connected = false;
-            socket.close();
+                socket.addEventListener("error", function(event)
+                {
+                    console.log("Error: " + event);
+                });
+
+                socket.addEventListener("close", function(event)
+                {
+                    console.log("Not Connected");
+                    connected = false;
+                    socket.close();
+                    serverConnect.disabled = false;
+                    localConnect.disabled = false;
+                });
+
+            });
         });
     }
 
@@ -592,22 +758,10 @@ function Game()
         clientData.player.tileID = newPlayer.tileID;
         clientData.player.tileX = newPlayer.tileX;
         clientData.player.tileY = newPlayer.tileY;
-        clientData.player.turretAngle = newPlayer.turretAngle;
-
-        clientData.player.chassisVector.dirX = newPlayer.chassisVector.dirX;
-        clientData.player.chassisVector.dirY = newPlayer.chassisVector.dirY;
-        clientData.player.chassisVector.length = newPlayer.chassisVector.length;
-        clientData.player.chassisVector.velX = newPlayer.chassisVector.velX;
-        clientData.player.chassisVector.velY = newPlayer.chassisVector.velY;
-        clientData.player.chassisVector.update();
-        
-        clientData.player.turretVector.dirX = newPlayer.turretVector.dirX;
-        clientData.player.turretVector.dirY = newPlayer.turretVector.dirY;
-        clientData.player.turretVector.length = newPlayer.turretVector.length;
-        clientData.player.turretVector.velX = newPlayer.turretVector.velX;
-        clientData.player.turretVector.velY = newPlayer.turretVector.velY;
-        clientData.player.turretVector.update();
-        
+        clientData.player.chassisVector.x = newPlayer.chassisVector.x;
+        clientData.player.chassisVector.y = newPlayer.chassisVector.y;
+        clientData.player.turretVector.x = newPlayer.turretVector.x;
+        clientData.player.turretVector.y = newPlayer.turretVector.y;
         clientData.player.speed = newPlayer.speed;
         clientData.player.acc = newPlayer.acc;
     }
